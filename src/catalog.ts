@@ -1,21 +1,41 @@
-import type { ImageSourcePropType } from 'react-native';
+export type Category = {
+  id: string;
+  slug: string;
+  name: string;
+  description: string;
+  imageUrl: string | null;
+};
 
 export type Product = {
   id: string;
+  categoryId: string;
   name: string;
   description: string;
+  imageUrl: string | null;
   pricePerKgCents: number;
-  image: ImageSourcePropType;
+  regularPricePerKgCents: number;
+  maxGrams: number;
+  available: boolean;
 };
 
-// Catalogo dimostrativo: in futuro i prodotti saranno forniti dal backend.
-export const products: Product[] = [
-  { id: 'involtini', name: 'Involtini di vitello', pricePerKgCents: 1800, image: require('../assets/involtini.jpg'), description: 'Preparati a mano, pronti da cuocere.' },
-  { id: 'hamburger', name: 'Hamburger di manzo', pricePerKgCents: 1600, image: require('../assets/hamburger.jpg'), description: 'Manzo selezionato, macinato fresco ogni giorno.' },
-  { id: 'polpette', name: 'Polpette della casa', pricePerKgCents: 1500, image: require('../assets/polpette.jpg'), description: 'Preparate secondo la ricetta della casa.' },
-  { id: 'spiedini', name: 'Spiedini misti', pricePerKgCents: 1800, image: require('../assets/spiedini.jpg'), description: 'Preparati freschi ogni giorno.' },
-];
+export type Catalog = {
+  categories: Category[];
+  products: Product[];
+  settings: {
+    name: string;
+    address: string | null;
+    phone: string | null;
+    openingHours: string | null;
+    pickupNotes: string | null;
+    deliveryHours: string | null;
+    privacyPolicyUrl: string | null;
+    termsUrl: string | null;
+    deliveryEnabled: boolean;
+  } | null;
+  paymentsEnabled: boolean;
+};
 
-export const formatPrice = (cents: number) => `€ ${(cents / 100).toFixed(2).replace('.', ',')}`;
+const currency = new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' });
+export const formatPrice = (cents: number) => currency.format(cents / 100);
 export const formatWeight = (grams: number) => `${(grams / 1000).toFixed(1).replace('.', ',')} kg`;
-export const lineTotal = (pricePerKgCents: number, grams: number) => Math.round(pricePerKgCents * grams / 1000);
+export const lineTotal = (price: number, grams: number) => Math.floor((price * (grams / 500) + 1) / 2);

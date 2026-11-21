@@ -1,0 +1,189 @@
+generator client {
+  provider = "prisma-client-js"
+}
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+enum Fulfillment {
+  PICKUP
+  DELIVERY
+}
+enum OrderStatus {
+  PENDING_PAYMENT
+  RECEIVED
+  PREPARING
+  READY
+  OUT_FOR_DELIVERY
+  DELIVERED
+  COMPLETED
+  CANCELLED
+}
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+}
+model Category {
+  id          String    @id @default(cuid())
+  slug        String    @unique
+  name        String
+  description String    @default("")
+  imageUrl    String?
+  sortOrder   Int       @default(0)
+  active      Boolean   @default(true)
+  products    Product[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+model Product {
+  id              String      @id @default(cuid())
+  categoryId      String
+  category        Category    @relation(fields: [categoryId], references: [id])
+  name            String
+  description     String      @default("")
+  imageUrl        String?
+  pricePerKgCents Int
+  maxGrams        Int         @default(10000)
+  available       Boolean     @default(true)
+  archived        Boolean     @default(false)
+  sortOrder       Int         @default(0)
+  promotions      Promotion[]
+  orderItems      OrderItem[]
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  @@index([categoryId, archived, available])
+}
+model Promotion {
+  id              String   @id @default(cuid())
+  productId       String
+  product         Product  @relation(fields: [productId], references: [id])
+  pricePerKgCents Int
+  startsAt        DateTime
+  endsAt          DateTime
+  active          Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  @@index([productId, active, startsAt, endsAt])
+}
+model BusinessSettings {
+  id               String  @id @default("business")
+  name             String  @default("Macelleria Chiappetta")
+  address          String?
+  phone            String?
+  openingHours     String?
+  pickupNotes      String?
+  deliveryHours    String?
+  privacyPolicyUrl String?
+  termsUrl         String?
+  deliveryEnabled  Boolean @default(false)
+  updatedAt        DateTime @updatedAt
+}
+model DeliveryZone {
+  id             String  @id @default(cuid())
+  postalCode     String  @unique
+  city           String
+  feeCents       Int
+  minOrderCents  Int     @default(0)
+  active         Boolean @default(true)
+}
+model Order {
+  id                 String        @id @default(cuid())
+  number             Int           @unique @default(autoincrement())
+  idempotencyKey     String        @unique
+  requestHash        String
+  guestTokenHash     String
+  customerId         String?
+  customer           Customer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  pickupSnapshot     Json?
+  deliveryHours      String?
+  paidAt             DateTime?
+  refundedAt         DateTime?
+  pushToken          String?
+  cancellationRequested Boolean @default(false)
+  stripeRefundId     String? @unique
+  customerName       String
+  phone              String
+  fulfillment        Fulfillment
+  deliveryAddress    Json?
+  subtotalCents      Int
+  deliveryFeeCents   Int
+  totalCents         Int
+  status             OrderStatus   @default(PENDING_PAYMENT)
+  paymentStatus      PaymentStatus @default(PENDING)
+  stripePaymentId    String?       @unique
+  items              OrderItem[]
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
+  @@index([status, createdAt])
+  @@index([customerId, createdAt])
+  @@index([paidAt])
+  @@index([refundedAt])
+}
+model OrderItem {
+  id              String  @id @default(cuid())
+  orderId         String
+  order           Order   @relation(fields: [orderId], references: [id])
+  productId       String?
+  product         Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+  name            String
+  grams           Int
+  actualGrams     Int?
+  pricePerKgCents Int
+  totalCents      Int
+  @@index([orderId])
+}
+model StripeEvent {
+  id        String   @id
+  createdAt DateTime @default(now())
+}
+model AdminUser {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  sessions     AdminSession[]
+  active       Boolean  @default(true)
+  createdAt    DateTime @default(now())
+}
+model AuditLog {
+  id        String   @id @default(cuid())
+  adminId   String
+  action    String
+  targetId  String
+  createdAt DateTime @default(now())
+  @@index([targetId, createdAt])
+}
+
+
+model AdminSession {
+  tokenHash String @id
+  adminId   String
+  admin     AdminUser @relation(fields: [adminId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  @@index([adminId, expiresAt])
+}
+
+model CatalogImage {
+  id        String @id @default(cuid())
+  bytes     Bytes
+  createdAt DateTime @default(now())
+}
+
+model PushMessage {
+  id          String @id @default(cuid())
+  orderId     String
+  body        String
+  createdAt   DateTime @default(now())
+  nextAttempt DateTime @default(now())
+  attempts    Int @default(0)
+  deliveredAt DateTime?
+  @@index([deliveredAt, nextAttempt])
+}
+
+model Customer {
+  id        String @id
+  tokenHash String @unique
+  createdAt DateTime @default(now())
+  orders    Order[]
+}

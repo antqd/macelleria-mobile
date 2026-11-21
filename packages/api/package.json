@@ -1,0 +1,35 @@
+{
+  "name": "@chiappetta/api",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "start": "tsx src/index.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "tsx --test src/*.test.ts",
+    "db:generate": "prisma generate",
+    "db:migrate": "prisma migrate dev",
+    "db:deploy": "prisma migrate deploy",
+    "db:seed": "tsx prisma/seed.ts",
+    "admin:create": "tsx prisma/admin.ts",
+    "test:integration": "tsx --test tests/checkout.integration.ts",
+    "privacy:retention": "tsx prisma/retention.ts"
+  },
+  "dependencies": {
+    "@fastify/cors": "^10.0.0",
+    "@fastify/rate-limit": "^10.0.0",
+    "@prisma/client": "^6.19.0",
+    "dotenv": "^16.4.7",
+    "fastify": "^5.2.0",
+    "stripe": "^18.0.0",
+    "zod": "^3.24.2",
+    "sharp": "^0.34.5"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "prisma": "^6.19.0",
+    "tsx": "^4.19.2",
+    "typescript": "~5.9.2"
+  },
+  "type": "module"
+}
